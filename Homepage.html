@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScienceLab Explorer - Interactive Science Experiments</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #16a34a;
+            --accent: #eab308;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-icon {
+            margin-right: 0.5rem;
+            font-size: 1.8rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-links li {
+            margin-left: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+        
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+        
+        .hero {
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/api/placeholder/1200/600') center/cover;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+        
+        .hero-content {
+            max-width: 800px;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--dark);
+        }
+        
+        .btn-primary:hover {
+            background-color: #d97706;
+            transform: translateY(-2px);
+        }
+        
+        .section {
+            padding: 4rem 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            height: 4px;
+            width: 60px;
+            background-color: var(--accent);
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+        
+        .experiments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .experiment-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .experiment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-img {
+            height: 200px;
+            background-color: #ddd;
+            position: relative;
+        }
+        
+        .difficulty {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .beginner {
+            background-color: #bbf7d0;
+            color: #166534;
+        }
+        
+        .intermediate {
+            background-color: #fef08a;
+            color: #854d0e;
+        }
+        
+        .advanced {
+            background-color: #fecaca;
+            color: #991b1b;
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+        
+        .card-description {
+            margin-bottom: 1.5rem;
+            color: #64748b;
+        }
+        
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tag {
+            background-color: #e2e8f0;
+            color: #475569;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .interactive-demo {
+            margin-top: 2rem;
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .demo-controls {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        #demo-canvas {
+            width: 100%;
+            height: 400px;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+        }
+        
+        .pendulum {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 10px;
+            height: 200px;
+            background-color: #94a3b8;
+            transform-origin: top center;
+            transform: rotate(30deg);
+        }
+        
+        .pendulum-bob {
+            position: absolute;
+            bottom: -20px;
+            left: -20px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--accent);
+            border-radius: 50%;
+        }
+        
+        .slider-container {
+            margin: 1rem 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .slider {
+            width: 100%;
+        }
+        
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .info-img {
+            height: 400px;
+            background-color: #ddd;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        
+        .categories-section {
+            background-color: var(--light);
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .category-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+            text-decoration: none;
+            color: var(--dark);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .category-img {
+            height: 150px;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+        
+        .physics {
+            background-color: #3b82f6;
+        }
+        
+        .chemistry {
+            background-color: #10b981;
+        }
+        
+        .biology {
+            background-color: #f97316;
+        }
+        
+        .earth {
+            background-color: #8b5cf6;
+        }
+        
+        .category-content {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .testimonials {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .testimonial-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 1.5rem;
+        }
+        
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+        }
+        
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 1rem;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 4rem 0 2rem;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <span class="logo-icon">⚗️</span>
+                    ScienceLab Explorer
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#">Experiments</a></li>
+                    <li><a href="#">Categories</a></li>
+                    <li><a href="#">Resources</a></li>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Interactive Science Experiments</h1>
+            <p>Discover, learn, and explore the fascinating world of science through hands-on experiments and interactive simulations.</p>
+            <a href="#experiments" class="btn btn-primary">Explore Experiments</a>
+        </div>
+    </section>
+    
+    <section id="experiments" class="section">
+        <div class="container">
+            <h2 class="section-title">Featured Experiments</h2>
+            <div class="experiments-grid">
+                <div class="experiment-card">
+                    <div class="card-img">
+                        <img src="/api/placeholder/300/200" alt="Pendulum Experiment">
+                        <span class="difficulty beginner">Beginner</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Simple Pendulum</h3>
+                        <p class="card-description">Explore the physics of pendulum motion and learn about energy conservation.</p>
+                        <div class="card-tags">
+                            <span class="tag">Physics</span>
+                            <span class="tag">Motion</span>
+                            <span class="tag">Energy</span>
+                        </div>
+                        <a href="#pendulum-demo" class="btn btn-primary">Try It Now</a>
+                    </div>
+                </div>
+                
+                <div class="experiment-card">
+                    <div class="card-img">
+                        <img src="/api/placeholder/300/200" alt="Chemical Reactions">
+                        <span class="difficulty intermediate">Intermediate</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Chemical Reactions</h3>
+                        <p class="card-description">Mix virtual chemicals and observe different types of reactions in a safe environment.</p>
+                        <div class="card-tags">
+                            <span class="tag">Chemistry</span>
+                            <span class="tag">Reactions</span>
+                            <span class="tag">Molecules</span>
+                        </div>
+                        <a href="#" class="btn btn-primary">Try It Now</a>
+                    </div>
+                </div>
+                
+                <div class="experiment-card">
+                    <div class="card-img">
+                        <img src="/api/placeholder/300/200" alt="DNA Extraction">
+                        <span class="difficulty intermediate">Intermediate</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">DNA Extraction</h3>
+                        <p class="card-description">Learn how to extract DNA from fruits and explore genetic concepts.</p>
+                        <div class="card-tags">
+                            <span class="tag">Biology</span>
+                            <span class="tag">Genetics</span>
+                            <span class="tag">Molecular</span>
+                        </div>
+                        <a href="#" class="btn btn-primary">Try It Now</a>
+                    </div>
+                </div>
+                
+                <div class="experiment-card">
+                    <div class="card-img">
+                        <img src="/api/placeholder/300/200" alt="Solar System Simulator">
+                        <span class="difficulty advanced">Advanced</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Solar System Simulator</h3>
+                        <p class="card-description">Explore planetary motion and gravitational effects in our solar system.</p>
+                        <div class="card-tags">
+                            <span class="tag">Astronomy</span>
+                            <span class="tag">Gravity</span>
+                            <span class="tag">Space</span>
+                        </div>
+                        <a href="#" class="btn btn-primary">Try It Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section id="pendulum-demo" class="section">
+        <div class="container">
+            <div class="interactive-demo">
+                <div class="demo-header">
+                    <h2>Simple Pendulum Experiment</h2>
+                    <div class="demo-controls">
+                        <button id="start-btn" class="btn btn-primary">Start</button>
+                        <button id="reset-btn" class="btn">Reset</button>
+                    </div>
+                </div>
+                
+                <div class="canvas-container">
+                    <div id="demo-canvas">
+                        <div class="pendulum">
+                            <div class="pendulum-bob"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Length:</span>
+                        <span id="length-value">100 cm</span>
+                    </div>
+                    <input type="range" min="50" max="150" value="100" class="slider" id="length-slider">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Initial Angle:</span>
+                        <span id="angle-value">30°</span>
+                    </div>
+                    <input type="range" min="0" max="60" value="30" class="slider" id="angle-slider">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Gravity:</span>
+                        <span id="gravity-value">9.8 m/s²</span>
+                    </div>
+                    <input type="range" min="1" max="20" value="9.8" step="0.1" class="slider" id="gravity-slider">
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Why Interactive Learning?</h2>
+            <div class="info-section">
+                <div>
+                    <h3>Engage, Explore, and Understand</h3>
+                    <p>Interactive learning provides students with hands-on experience that helps them better understand scientific concepts. By engaging with simulations and experiments, students can:</p>
+                    <ul>
+                        <li>Visualize abstract concepts</li>
+                        <li>Test hypotheses in a safe environment</li>
+                        <li>Learn from trial and error</li>
+                        <li>Develop critical thinking skills</li>
+                        <li>Connect theory with practical applications</li>
+                    </ul>
+                    <p>Our platform provides a wide range of interactive experiments that cover various scientific disciplines, allowing students to explore and learn at their own pace.</p>
+                </div>
+                <div class="info-img">
+                    <img src="/api/placeholder/600/400" alt="Students learning science">
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="section categories-section">
+        <div class="container">
+            <h2 class="section-title">Explore by Category</h2>
+            <div class="categories-grid">
+                <a href="#" class="category-card">
+                    <div class="category-img physics">
+                        <span>⚡</span>
+                    </div>
+                    <div class="category-content">
+                        <h3>Physics</h3>
+                        <p>Motion, energy, electricity, and more</p>
+                    </div>
+                </a>
+                
+                <a href="#" class="category-card">
+                    <div class="category-img chemistry">
+                        <span>🧪</span>
+                    </div>
+                    <div class="category-content">
+                        <h3>Chemistry</h3>
+                        <p>Reactions, elements, and compounds</p>
+                    </div>
+                </a>
+                
+                <a href="#" class="category-card">
+                    <div class="category-img biology">
+                        <span>🧬</span>
+                    </div>
+                    <div class="category-content">
+                        <h3>Biology</h3>
+                        <p>Life, ecosystems, and organisms</p>
+                    </div>
+                </a>
+                
+                <a href="#" class="category-card">
+                    <div class="category-img earth">
+                        <span>🌎</span>
+                    </div>
+                    <div class="category-content">
+                        <h3>Earth Science</h3>
+                        <p>Geology, weather, and climate</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <iframe src="https://phet.colorado.edu/sims/html/wave-on-a-string/latest/wave-on-a-string_en.html"
+        width="800"
+        height="600"
+        allowfullscreen>
+    </iframe>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <h3 class="footer-title">ScienceLab Explorer</h3>
+                    <p>Making science accessible, interactive, and fun for students of all ages.</p>
+                </div>
+                
+                <div>
+                    <h3 class="footer-title">Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#">Experiments</a></li>
+                        <li><a href="#">Resources</a></li>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="footer-title">Categories</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Physics</a></li>
+                        <li><a href="#">Chemistry</a></li>
+                        <li><a href="#">Biology</a></li>
+                        <li><a href="#">Earth Science</a></li>
+                        <li><a href="#">Astronomy</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="footer-title">Connect</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Newsletter</a></li>
+                        <li><a href="#">Facebook</a></li>
+                        <li><a href="#">Twitter</a></li>
+                        <li><a href="#">Instagram</a></li>
+                        <li><a href="#">YouTube</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pendulum experiment
+            const pendulum = document.querySelector('.pendulum');
+            const lengthSlider = document.getElementById('length-slider');
+            const angleSlider = document.getElementById('angle-slider');
+            const gravitySlider = document.getElementById('gravity-slider');
+            const lengthValue = document.getElementById('length-value');
+            const angleValue = document.getElementById('angle-value');
+            const gravityValue = document.getElementById('gravity-value');
+            const startBtn = document.getElementById('start-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            
+            let isAnimating = false;
+            let animationId = null;
+            let angle = 30 * Math.PI / 180; // Convert to radians
+            let angleVelocity = 0;
+            let angleAcceleration = 0;
+            let length = 100;
+            let gravity = 9.8;
+            let damping = 0.999; // Damping factor
+            let lastTimestamp = null;
+            
+            // Update pendulum position
+            function updatePendulumPosition() {
+                pendulum.style.height = `${length * 2}px`; // Scale for visual purposes
+                pendulum.style.transform = `rotate(${angle * 180 / Math.PI}deg)`;
+            }
+            
+            // Initialize position
+            updatePendulumPosition();
+            
+            // Length slider
+            lengthSlider.addEventListener('input', function() {
+                length = parseInt(this.value);
+                lengthValue.textContent = `${length} cm`;
+                updatePendulumPosition();
+                
+                // Reset animation if running
+                if (isAnimating) {
+                    stopAnimation();
+                    startAnimation();
+                }
+            });
+            
+            // Angle slider
+            angleSlider.addEventListener('input', function() {
+                angle = parseInt(this.value) * Math.PI / 180; // Convert to radians
+                angleValue.textContent = `${parseInt(this.value)}°`;
+                updatePendulumPosition();
+                
+                // Reset animation if running
+                if (isAnimating) {
+                    stopAnimation();
+                    startAnimation();
+                }
+            });
+            
+            // Gravity slider
+            gravitySlider.addEventListener('input', function() {
+                gravity = parseFloat(this.value);
+                gravityValue.textContent = `${gravity.toFixed(1)} m/s²`;
+                
+                // Reset animation if running
+                if (isAnimating) {
+                    stopAnimation();
+                    startAnimation();
+                }
+            });
+            
+            // Animation function
+            function animate(timestamp) {
+                if (!lastTimestamp) {
+                    lastTimestamp = timestamp;
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+                
+                const deltaTime = (timestamp - lastTimestamp) / 1000; // Convert to seconds
+                lastTimestamp = timestamp;
+                
+                // Calculate acceleration
+                angleAcceleration = -gravity / length * Math.sin(angle);
+                
+                // Update velocity and angle
+                angleVelocity += angleAcceleration * deltaTime;
+                angleVelocity *= damping; // Apply damping
+                angle += angleVelocity * deltaTime;
+                
+                // Update position
+                updatePendulumPosition();
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            // Start animation
+            function startAnimation() {
+                if (!isAnimating) {
+                    isAnimating = true;
+                    lastTimestamp = null;
+                    startBtn.textContent = 'Pause';
+                    animationId = requestAnimationFrame(animate);
+                } else {
+                    stopAnimation();
+                    startBtn.textContent = 'Resume';
+                }
+            }
+            
+            // Stop animation
+            function stopAnimation() {
+                isAnimating = false;
+                cancelAnimationFrame(animationId);
+            }
+            
+            // Reset pendulum
+            function resetPendulum() {
+                stopAnimation();
+                angle = parseInt(angleSlider.value) * Math.PI / 180;
+                angleVelocity = 0;
+                angleAcceleration = 0;
+                startBtn.textContent = 'Start';
+                updatePendulumPosition();
+            }
+            
+            // Event listeners
+            startBtn.addEventListener('click', startAnimation);
+            resetBtn.addEventListener('click', resetPendulum);
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

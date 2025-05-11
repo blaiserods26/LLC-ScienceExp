@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendulum Physics Simulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --primary-light: #ebefff;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --danger: #f72585;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --border-radius: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: #f5f7fa;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 1rem;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .simulation-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .simulation-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .canvas-container {
+            position: relative;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            aspect-ratio: 16/9;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .trail-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .pendulum-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+        }
+
+        .controls-panel {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .mode-switch {
+            display: flex;
+            background-color: var(--gray-light);
+            border-radius: 6px;
+            padding: 2px;
+        }
+
+        .mode-btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            background: transparent;
+            color: var(--gray);
+        }
+
+        .mode-btn.active {
+            background-color: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .control-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .control-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 0.25rem;
+            width: 16px;
+            height: 16px;
+            background-color: var(--gray-light);
+            color: var(--gray);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            text-align: center;
+            line-height: 16px;
+            cursor: help;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.75rem;
+            font-weight: 400;
+            pointer-events: none;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--gray-light);
+            outline: none;
+            margin-bottom: 0.25rem;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--primary-dark);
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        input[type="checkbox"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--gray-light);
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 0.75rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .checkbox-label {
+            font-size: 0.875rem;
+            color: var(--dark);
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-light);
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d7e0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #e5177b;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #3db5d8;
+            box-shadow: var(--shadow-md);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .advanced-control {
+            display: none;
+        }
+
+        .advanced-stat {
+            display: none;
+        }
+
+        .show-advanced .advanced-control {
+            display: block;
+        }
+
+        .show-advanced .advanced-stat {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+
+        /* Animation for the pendulum bob */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Pendulum Physics Simulation</h1>
+            <p class="subtitle">Explore the dynamics of a simple pendulum with real-time physics simulation and interactive controls</p>
+        </header>
+
+        <div class="simulation-container">
+          <div class="outer">
+              <div class="canvas-container">
+                  <canvas id="trailCanvas" class="trail-canvas"></canvas>
+                  <canvas id="pendulumCanvas" class="pendulum-canvas"></canvas>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="swingsCount">0</div>
+                    <div class="stat-label">Oscillations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="currentAngle">0°</div>
+                    <div class="stat-label">Current Angle</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="periodValue">0.00s</div>
+                    <div class="stat-label">Period</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="velocityValue">0.00m/s</div>
+                    <div class="stat-label">Velocity</div>
+                </div>
+                <div class="stat-card advanced-stat">
+                    <div class="stat-value" id="energyValue">0.00J</div>
+                    <div class="stat-label">Energy</div>
+                </div>
+              </div>
+          </div>
+            <div class="controls-panel" id="controlsPanel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Controls</h2>
+                    <div class="mode-switch">
+                        <button class="mode-btn active" id="modeBasic">Basic</button>
+                        <button class="mode-btn" id="modeAdvanced">Advanced</button>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                  <button id="toggleBtn" class="btn-success">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                      Start
+                  </button>
+                  <button id="resetBtn" class="btn-danger">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                          <polyline points="23 4 23 10 17 10"></polyline>
+                          <polyline points="1 20 1 14 7 14"></polyline>
+                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      Reset
+                  </button>
+                </div>
+
+                <div class="button-group">
+                  <button id="trailBtn" class="btn-secondary">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                      </svg>
+                      Trail
+                  </button>
+                  <button id="clearTrailBtn" class="btn-secondary">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                          <path d="M3 6h18"></path>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                      Clear
+                  </button>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Length <span class="tooltip">?<span class="tooltip-text">Length of the pendulum string in meters</span></span></label>
+                        <span class="control-value" id="lengthValue">1.0</span>
+                    </div>
+                    <input type="range" id="lengthSlider" min="0.1" max="2" step="0.1" value="1">
+                    <div class="range-labels">
+                        <span>0.1m</span>
+                        <span>2m</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Mass <span class="tooltip">?<span class="tooltip-text">Mass of the pendulum bob in kilograms</span></span></label>
+                        <span class="control-value" id="massValue">1.0</span>
+                    </div>
+                    <input type="range" id="massSlider" min="0.1" max="5" step="0.1" value="1">
+                    <div class="range-labels">
+                        <span>0.1kg</span>
+                        <span>5kg</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Gravity <span class="tooltip">?<span class="tooltip-text">Gravitational acceleration in m/s²</span></span></label>
+                        <span class="control-value" id="gravityValue">9.8</span>
+                    </div>
+                    <input type="range" id="gravitySlider" min="1" max="20" step="0.1" value="9.8">
+                    <div class="range-labels">
+                        <span>1 m/s²</span>
+                        <span>20 m/s²</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Angle <span class="tooltip">?<span class="tooltip-text">Initial angle of displacement in degrees</span></span></label>
+                        <span class="control-value" id="angleValue">30°</span>
+                    </div>
+                    <input type="range" id="angleSlider" min="0" max="90" step="1" value="30">
+                    <div class="range-labels">
+                        <span>0°</span>
+                        <span>90°</span>
+                    </div>
+                </div>
+
+                <div class="control-group advanced-control">
+                    <div class="control-header">
+                        <label class="control-label">Damping <span class="tooltip">?<span class="tooltip-text">Air resistance coefficient (0 = no damping)</span></span></label>
+                        <span class="control-value" id="dampingValue">0.05</span>
+                    </div>
+                    <input type="range" id="dampingSlider" min="0" max="0.5" step="0.01" value="0.05">
+                    <div class="range-labels">
+                        <span>None (Vacuum)</span>
+                        <span>High</span>
+                    </div>
+                </div>
+
+                <div class="control-group advanced-control">
+                    <div class="control-header">
+                        <label class="control-label">Bob Size <span class="tooltip">?<span class="tooltip-text">Visual size of the pendulum bob</span></span></label>
+                        <span class="control-value" id="bobSizeValue">20</span>
+                    </div>
+                    <input type="range" id="bobSizeSlider" min="10" max="50" step="1" value="20">
+                    <div class="range-labels">
+                        <span>Small</span>
+                        <span>Large</span>
+                    </div>
+                </div>
+
+                <div class="control-group advanced-control">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showForcesCheckbox">
+                        <label for="showForcesCheckbox" class="checkbox-label">Show Force Vectors <span class="tooltip">?<span class="tooltip-text">Display tension and gravitational force vectors</span></span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Pendulum Physics Simulation &copy; 2023 | Built with HTML5 Canvas and JavaScript</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const pendulumCanvas = document.getElementById('pendulumCanvas');
+        const trailCanvas = document.getElementById('trailCanvas');
+        const pendulumCtx = pendulumCanvas.getContext('2d');
+        const trailCtx = trailCanvas.getContext('2d');
+        
+        // Control buttons
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const trailBtn = document.getElementById('trailBtn');
+        const clearTrailBtn = document.getElementById('clearTrailBtn');
+        const toggleBtn = document.getElementById('toggleBtn');
+        
+        // Mode switches
+        const modeBasicBtn = document.getElementById('modeBasic');
+        const modeAdvancedBtn = document.getElementById('modeAdvanced');
+        const controlsPanel = document.getElementById('controlsPanel');
+        
+        // Sliders
+        const lengthSlider = document.getElementById('lengthSlider');
+        const massSlider = document.getElementById('massSlider');
+        const gravitySlider = document.getElementById('gravitySlider');
+        const angleSlider = document.getElementById('angleSlider');
+        const dampingSlider = document.getElementById('dampingSlider');
+        const bobSizeSlider = document.getElementById('bobSizeSlider');
+        const showForcesCheckbox = document.getElementById('showForcesCheckbox');
+        
+        // Value displays
+        const lengthValue = document.getElementById('lengthValue');
+        const massValue = document.getElementById('massValue');
+        const gravityValue = document.getElementById('gravityValue');
+        const angleValue = document.getElementById('angleValue');
+        const dampingValue = document.getElementById('dampingValue');
+        const bobSizeValue = document.getElementById('bobSizeValue');
+        
+        // Stats displays
+        const swingsCount = document.getElementById('swingsCount');
+        const currentAngle = document.getElementById('currentAngle');
+        const periodValue = document.getElementById('periodValue');
+        const velocityValue = document.getElementById('velocityValue');
+        const energyValue = document.getElementById('energyValue');
+
+        // Initialize canvas dimensions
+        function resizeCanvas() {
+            pendulumCanvas.width = pendulumCanvas.offsetWidth;
+            pendulumCanvas.height = pendulumCanvas.offsetHeight;
+            trailCanvas.width = trailCanvas.offsetWidth;
+            trailCanvas.height = trailCanvas.offsetHeight;
+        }
+
+        // Call resize on load and window resize
+        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('resize', resizeCanvas);
+
+        // Pendulum physics variables
+        const pendulum = {
+            length: 1,
+            mass: 1,
+            gravity: 9.8,
+            angle: 30 * Math.PI / 180, // Convert to radians
+            angleVelocity: 0,
+            angleAcceleration: 0,
+            damping: 0.05,
+            bobSize: 20,
+            showForces: false,
+            isRunning: false,
+            showTrail: false,
+            pivotX: 0,
+            pivotY: 0,
+            bobX: 0,
+            bobY: 0
+        };
+
+        // Statistics variables
+        const stats = {
+            swings: 0,
+            lastDirection: 0,
+            period: 0,
+            lastPeriodTime: null,
+            periodStart: null
+        };
+
+        // Set up initial pendulum state
+        function setupPendulum() {
+            pendulum.length = parseFloat(lengthSlider.value);
+            pendulum.mass = parseFloat(massSlider.value);
+            pendulum.gravity = parseFloat(gravitySlider.value);
+            pendulum.angle = parseFloat(angleSlider.value) * Math.PI / 180;
+            pendulum.damping = parseFloat(dampingSlider.value);
+            pendulum.bobSize = parseInt(bobSizeSlider.value);
+            pendulum.showForces = showForcesCheckbox.checked;
+            pendulum.angleVelocity = 0;
+            pendulum.angleAcceleration = 0;
+            
+            // Reset stats
+            stats.swings = 0;
+            stats.lastDirection = Math.sign(pendulum.angle);
+            stats.period = 0;
+            stats.lastPeriodTime = null;
+            stats.periodStart = null;
+            
+            // Update UI
+            updateControls();
+            updateStats();
+            
+            // Clear trail
+            clearTrail();
+            
+            // Calculate initial positions
+            calculatePositions();
+        }
+
+        // Update control values display
+        function updateControls() {
+            lengthValue.textContent = pendulum.length.toFixed(1);
+            massValue.textContent = pendulum.mass.toFixed(1);
+            gravityValue.textContent = pendulum.gravity.toFixed(1);
+            angleValue.textContent = `${Math.round(pendulum.angle * 180 / Math.PI)}°`;
+            dampingValue.textContent = pendulum.damping.toFixed(2);
+            bobSizeValue.textContent = pendulum.bobSize;
+        }
+
+        // Calculate pendulum positions
+        function calculatePositions() {
+            // Calculate pivot point (center top of canvas)
+            pendulum.pivotX = pendulumCanvas.width / 2;
+            pendulum.pivotY = 50;
+            
+            // Calculate bob position
+            const scale = Math.min(pendulumCanvas.width, pendulumCanvas.height - 100) / 4;
+            pendulum.bobX = pendulum.pivotX + Math.sin(pendulum.angle) * pendulum.length * scale;
+            pendulum.bobY = pendulum.pivotY + Math.cos(pendulum.angle) * pendulum.length * scale;
+        }
+
+        // Update statistics display
+        function updateStats() {
+            swingsCount.textContent = stats.swings;
+            currentAngle.textContent = `${Math.round(pendulum.angle * 180 / Math.PI)}°`;
+            periodValue.textContent = `${stats.period.toFixed(2)}s`;
+            
+            // Calculate velocity in m/s
+            const velocity = pendulum.angleVelocity * pendulum.length;
+            velocityValue.textContent = `${Math.abs(velocity).toFixed(2)}m/s`;
+            
+            // Calculate energy (kinetic + potential)
+            const height = pendulum.length * (1 - Math.cos(pendulum.angle));
+            const kineticEnergy = 0.5 * pendulum.mass * Math.pow(velocity, 2);
+            const potentialEnergy = pendulum.mass * pendulum.gravity * height;
+            const totalEnergy = kineticEnergy + potentialEnergy;
+            energyValue.textContent = `${totalEnergy.toFixed(2)}J`;
+        }
+
+        // Update pendulum physics
+        function updatePendulum(deltaTime) {
+            // Calculate acceleration (in radians)
+            pendulum.angleAcceleration = -pendulum.gravity / pendulum.length * Math.sin(pendulum.angle);
+            
+            // Apply damping
+            pendulum.angleAcceleration -= pendulum.damping * pendulum.angleVelocity;
+            
+            // Update velocity
+            pendulum.angleVelocity += pendulum.angleAcceleration * deltaTime;
+            
+            // Update angle
+            pendulum.angle += pendulum.angleVelocity * deltaTime;
+            
+            // Calculate new positions
+            calculatePositions();
+            
+            // Count swings
+            const currentDirection = Math.sign(pendulum.angle);
+            if (currentDirection !== 0 && currentDirection !== stats.lastDirection) {
+                stats.swings += 0.5; // Increment by 0.5 as we're counting half-swings
+                stats.lastDirection = currentDirection;
+                
+                // Calculate period (time for a complete swing)
+                const now = performance.now();
+                if (stats.periodStart === null) {
+                    stats.periodStart = now;
+                } else if (stats.swings % 1 === 0) { // Only on full swings
+                    stats.period = (now - stats.periodStart) / 1000;
+                    stats.periodStart = now;
+                }
+            }
+            
+            // Update statistics
+            updateStats();
+        }
+
+        // Draw pendulum on canvas
+        function drawPendulum() {
+            // Clear canvas
+            pendulumCtx.clearRect(0, 0, pendulumCanvas.width, pendulumCanvas.height);
+            
+            // Draw pendulum string
+            pendulumCtx.beginPath();
+            pendulumCtx.moveTo(pendulum.pivotX, pendulum.pivotY);
+            pendulumCtx.lineTo(pendulum.bobX, pendulum.bobY);
+            pendulumCtx.strokeStyle = '#4a5568';
+            pendulumCtx.lineWidth = 2;
+            pendulumCtx.stroke();
+            
+            // Draw pivot point
+            pendulumCtx.beginPath();
+            pendulumCtx.arc(pendulum.pivotX, pendulum.pivotY, 5, 0, Math.PI * 2);
+            pendulumCtx.fillStyle = '#4a5568';
+            pendulumCtx.fill();
+            
+            // Draw bob with gradient for depth
+            const bobGradient = pendulumCtx.createRadialGradient(
+                pendulum.bobX, pendulum.bobY, 0,
+                pendulum.bobX, pendulum.bobY, pendulum.bobSize * (pendulum.mass ** 0.3)
+            );
+            bobGradient.addColorStop(0, '#4895ef');
+            bobGradient.addColorStop(1, '#3f37c9');
+            
+            pendulumCtx.beginPath();
+            const adjustedBobSize = pendulum.bobSize * (pendulum.mass ** 0.3);
+            pendulumCtx.arc(pendulum.bobX, pendulum.bobY, adjustedBobSize, 0, Math.PI * 2);
+            pendulumCtx.fillStyle = bobGradient;
+            pendulumCtx.fill();
+            
+            // Add highlight to bob
+            pendulumCtx.beginPath();
+            pendulumCtx.arc(
+                pendulum.bobX - adjustedBobSize * 0.3, 
+                pendulum.bobY - adjustedBobSize * 0.3, 
+                adjustedBobSize * 0.2, 
+                0, 
+                Math.PI * 2
+            );
+            pendulumCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            pendulumCtx.fill();
+            
+            // Draw trail if enabled
+            if (pendulum.showTrail) {
+                trailCtx.beginPath();
+                trailCtx.arc(pendulum.bobX, pendulum.bobY, 2, 0, Math.PI * 2);
+                trailCtx.fillStyle = 'rgba(72, 149, 239, 0.7)';
+                trailCtx.fill();
+            }
+            
+            // Draw forces if enabled
+            if (pendulum.showForces) {
+                // Tension force (along string)
+                const tensionMagnitude = pendulum.mass * pendulum.gravity * Math.cos(pendulum.angle) + 
+                                      pendulum.mass * pendulum.length * pendulum.angleVelocity * pendulum.angleVelocity;
+                
+                const tensionX = -Math.sin(pendulum.angle) * tensionMagnitude * 0.02;
+                const tensionY = -Math.cos(pendulum.angle) * tensionMagnitude * 0.02;
+                
+                // Draw tension force
+                drawArrow(
+                    pendulum.bobX, pendulum.bobY,
+                    pendulum.bobX - tensionX, pendulum.bobY - tensionY,
+                    '#ef476f', 3
+                );
+                
+                // Gravity force (down)
+                drawArrow(
+                    pendulum.bobX, pendulum.bobY,
+                    pendulum.bobX, pendulum.bobY + pendulum.mass * pendulum.gravity * 0.02,
+                    '#06d6a0', 3
+                );
+                
+                // Add force labels
+                pendulumCtx.font = '12px Inter';
+                pendulumCtx.fillStyle = '#ef476f';
+                pendulumCtx.fillText('Tension', pendulum.bobX - tensionX - 20, pendulum.bobY - tensionY - 5);
+                
+                pendulumCtx.fillStyle = '#06d6a0';
+                pendulumCtx.fillText('Gravity', pendulum.bobX + 5, pendulum.bobY + pendulum.mass * pendulum.gravity * 0.02 + 15);
+            }
+        }
+
+        // Helper function to draw arrows
+        function drawArrow(fromX, fromY, toX, toY, color, width) {
+            pendulumCtx.beginPath();
+            pendulumCtx.strokeStyle = color;
+            pendulumCtx.lineWidth = width;
+            pendulumCtx.moveTo(fromX, fromY);
+            pendulumCtx.lineTo(toX, toY);
+            pendulumCtx.stroke();
+            
+            // Arrow head
+            const headLength = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            pendulumCtx.beginPath();
+            pendulumCtx.moveTo(toX, toY);
+            pendulumCtx.lineTo(
+                toX - headLength * Math.cos(angle - Math.PI / 6),
+                toY - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            pendulumCtx.lineTo(
+                toX - headLength * Math.cos(angle + Math.PI / 6),
+                toY - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            pendulumCtx.closePath();
+            pendulumCtx.fillStyle = color;
+            pendulumCtx.fill();
+        }
+
+        // Clear trail
+        function clearTrail() {
+            trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        }
+
+        // Animation variables
+        let lastTime = 0;
+        let animationId;
+
+        // Animation loop
+        function animate(currentTime) {
+            if (!lastTime) lastTime = currentTime;
+            const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+            lastTime = currentTime;
+            
+            // Update pendulum physics (with time step clamping for stability)
+            const timeStep = Math.min(deltaTime, 0.05); // Maximum time step of 50ms for stability
+            updatePendulum(timeStep);
+            
+            // Draw pendulum
+            drawPendulum();
+            
+            // Continue animation if running
+            if (pendulum.isRunning) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            if (!pendulum.isRunning) {
+                // Start/Resume simulation
+                pendulum.isRunning = true;
+                lastTime = 0; // Reset last time to avoid large time steps
+                animationId = requestAnimationFrame(animate);
+                
+                // Change button appearance to pause
+                toggleBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    Pause
+                `;
+                toggleBtn.classList.add('btn-primary');
+                toggleBtn.classList.remove('btn-success');
+            } else {
+                // Pause simulation
+                pendulum.isRunning = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+                
+                // Change button appearance to resume
+                toggleBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Resume
+                `;
+                toggleBtn.classList.add('btn-success');
+                toggleBtn.classList.remove('btn-primary');
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            // Stop the animation if running
+            pendulum.isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            // Reset the pendulum state
+            setupPendulum();
+            drawPendulum();
+            
+            // Reset toggle button text to Start
+            toggleBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Start
+            `;
+            toggleBtn.classList.add('btn-success');
+            toggleBtn.classList.remove('btn-primary');
+        });
+
+        resetBtn.addEventListener('click', () => {
+          // Stop the animation if running
+          pendulum.isRunning = false;
+          if (animationId) {
+              cancelAnimationFrame(animationId);
+          }
+          
+          // Reset the pendulum state
+          setupPendulum();
+          drawPendulum();
+          
+          // Reset start button text
+          startBtn.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Start
+          `;
+        });
+
+        trailBtn.addEventListener('click', () => {
+          pendulum.showTrail = !pendulum.showTrail;
+          
+          if (pendulum.showTrail) {
+              trailBtn.classList.add('btn-primary');
+              trailBtn.classList.remove('btn-secondary');
+          } else {
+              trailBtn.classList.add('btn-secondary');
+              trailBtn.classList.remove('btn-primary');
+          }
+        });
+
+        clearTrailBtn.addEventListener('click', clearTrail);
+
+        // Mode switching
+        modeBasicBtn.addEventListener('click', () => {
+          modeBasicBtn.classList.add('active');
+          modeAdvancedBtn.classList.remove('active');
+          controlsPanel.classList.remove('show-advanced');
+        });
+
+        modeAdvancedBtn.addEventListener('click', () => {
+          modeAdvancedBtn.classList.add('active');
+          modeBasicBtn.classList.remove('active');
+          controlsPanel.classList.add('show-advanced');
+        });
+
+        // Slider event listeners
+        lengthSlider.addEventListener('input', () => {
+          pendulum.length = parseFloat(lengthSlider.value);
+          lengthValue.textContent = pendulum.length.toFixed(1);
+          calculatePositions();
+          drawPendulum();
+        });
+
+        massSlider.addEventListener('input', () => {
+          pendulum.mass = parseFloat(massSlider.value);
+          massValue.textContent = pendulum.mass.toFixed(1);
+          drawPendulum();
+        });
+
+        gravitySlider.addEventListener('input', () => {
+          pendulum.gravity = parseFloat(gravitySlider.value);
+          gravityValue.textContent = pendulum.gravity.toFixed(1);
+          
+          // Update period calculation based on new gravity
+          if (!pendulum.isRunning) {
+              const theoreticalPeriod = 2 * Math.PI * Math.sqrt(pendulum.length / pendulum.gravity);
+              stats.period = theoreticalPeriod;
+              updateStats();
+          }
+        });
+
+        angleSlider.addEventListener('input', () => {
+          const angleInDegrees = parseFloat(angleSlider.value);
+          pendulum.angle = angleInDegrees * Math.PI / 180;
+          angleValue.textContent = `${angleInDegrees}°`;
+          calculatePositions();
+          drawPendulum();
+          
+          // Update current angle display
+          currentAngle.textContent = `${angleInDegrees}°`;
+        });
+
+        dampingSlider.addEventListener('input', () => {
+          pendulum.damping = parseFloat(dampingSlider.value);
+          dampingValue.textContent = pendulum.damping.toFixed(2);
+        });
+
+        bobSizeSlider.addEventListener('input', () => {
+          pendulum.bobSize = parseInt(bobSizeSlider.value);
+          bobSizeValue.textContent = pendulum.bobSize;
+          drawPendulum();
+        });
+
+        showForcesCheckbox.addEventListener('change', () => {
+          pendulum.showForces = showForcesCheckbox.checked;
+          drawPendulum();
+        });
+
+        // Allow dragging the pendulum bob
+        let isDragging = false;
+
+        pendulumCanvas.addEventListener('mousedown', (e) => {
+          const rect = pendulumCanvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          
+          // Check if the mouse is on the bob
+          const dx = mouseX - pendulum.bobX;
+          const dy = mouseY - pendulum.bobY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          const adjustedBobSize = pendulum.bobSize * (pendulum.mass ** 0.3);
+          
+          if (distance <= adjustedBobSize) {
+              isDragging = true;
+              
+              // Pause the simulation while dragging
+              if (pendulum.isRunning) {
+                  pendulum.isRunning = false;
+                  if (animationId) {
+                      cancelAnimationFrame(animationId);
+                  }
+              }
+          }
+        });
+
+        pendulumCanvas.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          
+          const rect = pendulumCanvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          
+          // Calculate new angle based on mouse position
+          const dx = mouseX - pendulum.pivotX;
+          const dy = mouseY - pendulum.pivotY;
+          pendulum.angle = Math.atan2(dx, dy);
+          
+          // Update angle slider to match
+          const angleInDegrees = Math.round(pendulum.angle * 180 / Math.PI);
+          if (angleInDegrees >= 0 && angleInDegrees <= 90) {
+              angleSlider.value = angleInDegrees;
+              angleValue.textContent = `${angleInDegrees}°`;
+          } else if (angleInDegrees < 0 && angleInDegrees >= -90) {
+              angleSlider.value = Math.abs(angleInDegrees);
+              angleValue.textContent = `${Math.abs(angleInDegrees)}°`;
+          }
+          
+          // Reset velocity when dragging
+          pendulum.angleVelocity = 0;
+          
+          // Update positions and redraw
+          calculatePositions();
+          drawPendulum();
+          updateStats();
+        });
+
+        pendulumCanvas.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+
+        pendulumCanvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+        });
+
+        // Touch events for mobile support
+        pendulumCanvas.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          const rect = pendulumCanvas.getBoundingClientRect();
+          const touch = e.touches[0];
+          const touchX = touch.clientX - rect.left;
+          const touchY = touch.clientY - rect.top;
+          
+          // Check if the touch is on the bob
+          const dx = touchX - pendulum.bobX;
+          const dy = touchY - pendulum.bobY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          const adjustedBobSize = pendulum.bobSize * (pendulum.mass ** 0.3);
+          
+          if (distance <= adjustedBobSize) {
+              isDragging = true;
+              
+              // Pause the simulation while dragging
+              if (pendulum.isRunning) {
+                  pendulum.isRunning = false;
+                  if (animationId) {
+                      cancelAnimationFrame(animationId);
+                  }
+              }
+          }
+        });
+
+        pendulumCanvas.addEventListener('touchmove', (e) => {
+          if (!isDragging) return;
+          e.preventDefault();
+          
+          const rect = pendulumCanvas.getBoundingClientRect();
+          const touch = e.touches[0];
+          const touchX = touch.clientX - rect.left;
+          const touchY = touch.clientY - rect.top;
+          
+          // Calculate new angle based on touch position
+          const dx = touchX - pendulum.pivotX;
+          const dy = touchY - pendulum.pivotY;
+          pendulum.angle = Math.atan2(dx, dy);
+          
+          // Update angle slider to match
+          const angleInDegrees = Math.round(pendulum.angle * 180 / Math.PI);
+          if (angleInDegrees >= 0 && angleInDegrees <= 90) {
+              angleSlider.value = angleInDegrees;
+              angleValue.textContent = `${angleInDegrees}°`;
+          } else if (angleInDegrees < 0 && angleInDegrees >= -90) {
+              angleSlider.value = Math.abs(angleInDegrees);
+              angleValue.textContent = `${Math.abs(angleInDegrees)}°`;
+          }
+          
+          // Reset velocity when dragging
+          pendulum.angleVelocity = 0;
+          
+          // Update positions and redraw
+          calculatePositions();
+          drawPendulum();
+          updateStats();
+        });
+
+        pendulumCanvas.addEventListener('touchend', () => {
+          isDragging = false;
+        });
+
+        pendulumCanvas.addEventListener('touchcancel', () => {
+          isDragging = false;
+        });
+
+        // Add effects for button interactions
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => {
+          button.addEventListener('mousedown', () => {
+              button.style.transform = 'scale(0.95)';
+          });
+          
+          button.addEventListener('mouseup', () => {
+              button.style.transform = 'scale(1)';
+          });
+          
+          button.addEventListener('mouseleave', () => {
+              button.style.transform = 'scale(1)';
+          });
+        });
+
+        // Set up initial pendulum state and draw it
+        setupPendulum();
+        drawPendulum();
+
+        // Show theoretical period initially
+        const theoreticalPeriod = 2 * Math.PI * Math.sqrt(pendulum.length / pendulum.gravity);
+        stats.period = theoreticalPeriod;
+        updateStats();
+
+        // Add pulse effect to bob
+        function togglePulse() {
+          const bobGradient = pendulumCtx.createRadialGradient(
+              pendulum.bobX, pendulum.bobY, 0,
+              pendulum.bobX, pendulum.bobY, pendulum.bobSize * (pendulum.mass ** 0.3)
+          );
+          
+          if (!pendulum.isRunning) {
+              // Add subtle pulse animation to indicate the simulation is ready to run
+              const adjustedBobSize = pendulum.bobSize * (pendulum.mass ** 0.3);
+              pendulumCtx.beginPath();
+              pendulumCtx.arc(pendulum.bobX, pendulum.bobY, adjustedBobSize + 5, 0, Math.PI * 2);
+              pendulumCtx.strokeStyle = 'rgba(72, 149, 239, 0.3)';
+              pendulumCtx.lineWidth = 3;
+              pendulumCtx.stroke();
+          }
+        }
+
+        // Call pulse animation periodically when not running
+        setInterval(() => {
+          if (!pendulum.isRunning) {
+              drawPendulum();
+              togglePulse();
+          }
+        }, 1500);
+
+        document.addEventListener('keydown', (e) => {
+          switch (e.key) {
+              case ' ': // Space - Toggle play/pause
+                  toggleBtn.click(); // Use the toggle button click handler
+                  break;
+              case 'r': // R - Reset
+                  resetBtn.click();
+                  break;
+              case 't': // T - Toggle trail
+                  trailBtn.click();
+                  break;
+              case 'c': // C - Clear trail
+                  clearTrailBtn.click();
+                  break;
+              case 'a': // A - Toggle advanced mode
+                  if (modeBasicBtn.classList.contains('active')) {
+                      modeAdvancedBtn.click();
+                  } else {
+                      modeBasicBtn.click();
+                  }
+                  break;
+              case 'f': // F - Toggle forces
+                  showForcesCheckbox.checked = !showForcesCheckbox.checked;
+                  pendulum.showForces = showForcesCheckbox.checked;
+                  drawPendulum();
+                  break;
+          }
+        });
+
+        // Add window focus/blur handlers to pause when tab is inactive
+        window.addEventListener('blur', () => {
+          if (pendulum.isRunning) {
+              pendulum.isRunning = false;
+              if (animationId) {
+                  cancelAnimationFrame(animationId);
+              }
+              
+              // Update toggle button appearance
+              toggleBtn.innerHTML = `
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Resume
+              `;
+              toggleBtn.classList.add('btn-success');
+              toggleBtn.classList.remove('btn-primary');
+          }
+        });
+
+        // Window resize handler to redraw pendulum with correct positions
+        window.addEventListener('resize', () => {
+          calculatePositions();
+          drawPendulum();
+        });
+</script>
+</body>
+</html>
